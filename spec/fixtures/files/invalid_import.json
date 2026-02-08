@@ -1,0 +1,11 @@
+{
+  "menus": [
+    {
+      "name": "Lunch",
+      "menu_items": [
+        { "name": "", "description": "No name item", "price": 5.00 },
+        { "name": "Burger", "description": "Juicy beef burger", "price": 12.50 }
+      ]
+    }
+  ]
+}
