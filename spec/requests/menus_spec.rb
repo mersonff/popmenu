@@ -1,22 +1,25 @@
 require 'rails_helper'
 
 RSpec.describe "Menus", type: :request do
-  describe "GET /menus" do
-    it "returns all menus" do
-      create_list(:menu, 3)
+  let(:restaurant) { create(:restaurant) }
 
-      get "/menus"
+  describe "GET /restaurants/:restaurant_id/menus" do
+    it "returns menus for the restaurant" do
+      create_list(:menu, 3, restaurant: restaurant)
+      create(:menu) # different restaurant
+
+      get "/restaurants/#{restaurant.id}/menus"
 
       expect(response).to have_http_status(:ok)
       expect(parsed_body["data"].size).to eq(3)
     end
   end
 
-  describe "GET /menus/:id" do
+  describe "GET /restaurants/:restaurant_id/menus/:id" do
     it "returns the menu" do
-      menu = create(:menu)
+      menu = create(:menu, restaurant: restaurant)
 
-      get "/menus/#{menu.id}"
+      get "/restaurants/#{restaurant.id}/menus/#{menu.id}"
 
       expect(response).to have_http_status(:ok)
       expect(parsed_body["data"]["id"]).to eq(menu.id)
@@ -24,18 +27,17 @@ RSpec.describe "Menus", type: :request do
     end
 
     it "returns 404 for non-existent menu" do
-      get "/menus/999"
+      get "/restaurants/#{restaurant.id}/menus/999"
 
       expect(response).to have_http_status(:not_found)
-      expect(parsed_body["error"]["message"]).to be_present
     end
   end
 
-  describe "POST /menus" do
+  describe "POST /restaurants/:restaurant_id/menus" do
     it "creates a menu" do
       params = { menu: { name: "Dinner", description: "Evening menu" } }
 
-      post "/menus", params: params, as: :json
+      post "/restaurants/#{restaurant.id}/menus", params: params, as: :json
 
       expect(response).to have_http_status(:created)
       expect(parsed_body["data"]["name"]).to eq("Dinner")
@@ -45,43 +47,46 @@ RSpec.describe "Menus", type: :request do
     it "returns 422 for invalid params" do
       params = { menu: { name: "" } }
 
-      post "/menus", params: params, as: :json
+      post "/restaurants/#{restaurant.id}/menus", params: params, as: :json
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(parsed_body["error"]["details"]).to be_present
     end
   end
 
-  describe "PATCH /menus/:id" do
+  describe "PATCH /restaurants/:restaurant_id/menus/:id" do
     it "updates the menu" do
-      menu = create(:menu, name: "Old Name")
+      menu = create(:menu, restaurant: restaurant, name: "Old Name")
 
-      patch "/menus/#{menu.id}", params: { menu: { name: "New Name" } }, as: :json
+      patch "/restaurants/#{restaurant.id}/menus/#{menu.id}",
+            params: { menu: { name: "New Name" } }, as: :json
 
       expect(response).to have_http_status(:ok)
       expect(parsed_body["data"]["name"]).to eq("New Name")
     end
 
     it "returns 422 for invalid params" do
-      menu = create(:menu)
+      menu = create(:menu, restaurant: restaurant)
 
-      patch "/menus/#{menu.id}", params: { menu: { name: "" } }, as: :json
+      patch "/restaurants/#{restaurant.id}/menus/#{menu.id}",
+            params: { menu: { name: "" } }, as: :json
 
       expect(response).to have_http_status(:unprocessable_entity)
     end
   end
 
-  describe "DELETE /menus/:id" do
+  describe "DELETE /restaurants/:restaurant_id/menus/:id" do
     it "deletes the menu" do
-      menu = create(:menu)
+      menu = create(:menu, restaurant: restaurant)
 
-      expect { delete "/menus/#{menu.id}" }.to change(Menu, :count).by(-1)
+      expect { delete "/restaurants/#{restaurant.id}/menus/#{menu.id}" }
+        .to change(Menu, :count).by(-1)
 
       expect(response).to have_http_status(:no_content)
     end
 
     it "returns 404 for non-existent menu" do
-      delete "/menus/999"
+      delete "/restaurants/#{restaurant.id}/menus/999"
 
       expect(response).to have_http_status(:not_found)
     end

@@ -12,7 +12,10 @@ class MenuItemsController < ApplicationController
   end
 
   def create
-    menu_item = @menu.menu_items.create!(menu_item_params)
+    menu_item = MenuItem.find_or_initialize_by(name: menu_item_params[:name])
+    menu_item.assign_attributes(menu_item_params)
+    menu_item.save!
+    @menu.menu_items << menu_item unless @menu.menu_items.include?(menu_item)
     render json: { data: menu_item }, status: :created
   end
 
@@ -22,7 +25,7 @@ class MenuItemsController < ApplicationController
   end
 
   def destroy
-    @menu_item.destroy!
+    @menu.menu_item_placements.find_by!(menu_item: @menu_item).destroy!
     head :no_content
   end
 

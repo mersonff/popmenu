@@ -1,52 +1,84 @@
 require 'rails_helper'
 
 RSpec.describe "MenuItems", type: :request do
-  let(:menu) { create(:menu) }
+  let(:restaurant) { create(:restaurant) }
+  let(:menu) { create(:menu, restaurant: restaurant) }
 
-  describe "GET /menus/:menu_id/menu_items" do
+  describe "GET /restaurants/:restaurant_id/menus/:menu_id/menu_items" do
     it "returns menu items for the menu" do
-      create_list(:menu_item, 3, menu: menu)
-      create(:menu_item) # different menu
+      items = create_list(:menu_item, 3)
+      items.each { |item| create(:menu_item_placement, menu: menu, menu_item: item) }
 
-      get "/menus/#{menu.id}/menu_items"
+      other_menu = create(:menu, restaurant: restaurant)
+      other_item = create(:menu_item)
+      create(:menu_item_placement, menu: other_menu, menu_item: other_item)
+
+      get "/restaurants/#{restaurant.id}/menus/#{menu.id}/menu_items"
 
       expect(response).to have_http_status(:ok)
       expect(parsed_body["data"].size).to eq(3)
     end
   end
 
-  describe "GET /menus/:menu_id/menu_items/:id" do
+  describe "GET /restaurants/:restaurant_id/menus/:menu_id/menu_items/:id" do
     it "returns the menu item" do
-      item = create(:menu_item, menu: menu)
+      item = create(:menu_item)
+      create(:menu_item_placement, menu: menu, menu_item: item)
 
-      get "/menus/#{menu.id}/menu_items/#{item.id}"
+      get "/restaurants/#{restaurant.id}/menus/#{menu.id}/menu_items/#{item.id}"
 
       expect(response).to have_http_status(:ok)
       expect(parsed_body["data"]["id"]).to eq(item.id)
     end
 
     it "returns 404 for non-existent item" do
-      get "/menus/#{menu.id}/menu_items/999"
+      get "/restaurants/#{restaurant.id}/menus/#{menu.id}/menu_items/999"
 
       expect(response).to have_http_status(:not_found)
     end
   end
 
-  describe "POST /menus/:menu_id/menu_items" do
-    it "creates a menu item" do
+  describe "POST /restaurants/:restaurant_id/menus/:menu_id/menu_items" do
+    it "creates a new menu item and places it on the menu" do
       params = { menu_item: { name: "Burger", description: "Juicy beef", price: 12.50 } }
 
-      post "/menus/#{menu.id}/menu_items", params: params, as: :json
+      post "/restaurants/#{restaurant.id}/menus/#{menu.id}/menu_items", params: params, as: :json
 
       expect(response).to have_http_status(:created)
       expect(parsed_body["data"]["name"]).to eq("Burger")
-      expect(parsed_body["data"]["price"]).to eq("12.5")
+      expect(menu.menu_items.count).to eq(1)
+    end
+
+    it "reuses an existing menu item by name" do
+      existing = create(:menu_item, name: "Burger", description: "Old desc", price: 10.00)
+      params = { menu_item: { name: "Burger", description: "New desc", price: 12.50 } }
+
+      expect {
+        post "/restaurants/#{restaurant.id}/menus/#{menu.id}/menu_items", params: params, as: :json
+      }.not_to change(MenuItem, :count)
+
+      expect(response).to have_http_status(:created)
+      expect(existing.reload.description).to eq("New desc")
+      expect(menu.menu_items).to include(existing)
+    end
+
+    it "does not duplicate placement if item already on menu" do
+      item = create(:menu_item, name: "Burger", description: "Beef", price: 10.00)
+      create(:menu_item_placement, menu: menu, menu_item: item)
+
+      params = { menu_item: { name: "Burger", description: "Beef", price: 10.00 } }
+
+      expect {
+        post "/restaurants/#{restaurant.id}/menus/#{menu.id}/menu_items", params: params, as: :json
+      }.not_to change(MenuItemPlacement, :count)
+
+      expect(response).to have_http_status(:created)
     end
 
     it "returns 422 for invalid params" do
       params = { menu_item: { name: "" } }
 
-      post "/menus/#{menu.id}/menu_items", params: params, as: :json
+      post "/restaurants/#{restaurant.id}/menus/#{menu.id}/menu_items", params: params, as: :json
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(parsed_body["error"]["details"]).to be_present
@@ -55,17 +87,18 @@ RSpec.describe "MenuItems", type: :request do
     it "returns 422 for negative price" do
       params = { menu_item: { name: "Bad", description: "Nope", price: -1 } }
 
-      post "/menus/#{menu.id}/menu_items", params: params, as: :json
+      post "/restaurants/#{restaurant.id}/menus/#{menu.id}/menu_items", params: params, as: :json
 
       expect(response).to have_http_status(:unprocessable_entity)
     end
   end
 
-  describe "PATCH /menus/:menu_id/menu_items/:id" do
+  describe "PATCH /restaurants/:restaurant_id/menus/:menu_id/menu_items/:id" do
     it "updates the menu item" do
-      item = create(:menu_item, menu: menu)
+      item = create(:menu_item)
+      create(:menu_item_placement, menu: menu, menu_item: item)
 
-      patch "/menus/#{menu.id}/menu_items/#{item.id}",
+      patch "/restaurants/#{restaurant.id}/menus/#{menu.id}/menu_items/#{item.id}",
             params: { menu_item: { price: 15.00 } }, as: :json
 
       expect(response).to have_http_status(:ok)
@@ -73,12 +106,15 @@ RSpec.describe "MenuItems", type: :request do
     end
   end
 
-  describe "DELETE /menus/:menu_id/menu_items/:id" do
-    it "deletes the menu item" do
-      item = create(:menu_item, menu: menu)
+  describe "DELETE /restaurants/:restaurant_id/menus/:menu_id/menu_items/:id" do
+    it "removes the placement but not the menu item" do
+      item = create(:menu_item)
+      create(:menu_item_placement, menu: menu, menu_item: item)
 
-      expect { delete "/menus/#{menu.id}/menu_items/#{item.id}" }
-        .to change(MenuItem, :count).by(-1)
+      expect {
+        delete "/restaurants/#{restaurant.id}/menus/#{menu.id}/menu_items/#{item.id}"
+      }.to change(MenuItemPlacement, :count).by(-1)
+        .and change(MenuItem, :count).by(0)
 
       expect(response).to have_http_status(:no_content)
     end

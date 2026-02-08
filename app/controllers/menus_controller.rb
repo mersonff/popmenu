@@ -1,8 +1,9 @@
 class MenusController < ApplicationController
+  before_action :set_restaurant
   before_action :set_menu, only: %i[show update destroy]
 
   def index
-    menus = Menu.all
+    menus = @restaurant.menus
     render json: { data: menus }
   end
 
@@ -11,7 +12,7 @@ class MenusController < ApplicationController
   end
 
   def create
-    menu = Menu.create!(menu_params)
+    menu = @restaurant.menus.create!(menu_params)
     render json: { data: menu }, status: :created
   end
 
@@ -27,8 +28,12 @@ class MenusController < ApplicationController
 
   private
 
+  def set_restaurant
+    @restaurant = Restaurant.find(params[:restaurant_id])
+  end
+
   def set_menu
-    @menu = Menu.find(params[:id])
+    @menu = @restaurant.menus.find(params[:id])
   end
 
   def menu_params
