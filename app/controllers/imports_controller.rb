@@ -1,6 +1,6 @@
 class ImportsController < ApplicationController
   def create
-    data = params.permit!.to_h.except("controller", "action")
+    data = JSON.parse(request.raw_post)
 
     import = Import.create!(input_data: data)
     ImportJob.perform_later(import.id)

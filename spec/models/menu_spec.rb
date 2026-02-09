@@ -24,7 +24,7 @@ RSpec.describe Menu, type: :model do
       active_menu = create(:menu, active: true, restaurant: restaurant)
       create(:menu, active: false, restaurant: restaurant)
 
-      expect(Menu.active).to eq([active_menu])
+      expect(Menu.active).to eq([ active_menu ])
     end
   end
 

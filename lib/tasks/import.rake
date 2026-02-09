@@ -1,6 +1,6 @@
 namespace :import do
   desc "Import restaurant data from a JSON file"
-  task :json, [:restaurant_id, :file_path] => :environment do |_t, args|
+  task :json, [ :restaurant_id, :file_path ] => :environment do |_t, args|
     restaurant_id = args[:restaurant_id]
     file_path = args[:file_path]
 
