@@ -1,11 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe JsonImportService do
-  let(:restaurant) { create(:restaurant) }
   let(:logger) { instance_double(Logger, info: nil, warn: nil) }
 
   def import(data)
-    JsonImportService.new(restaurant: restaurant, data: data, logger: logger).call
+    JsonImportService.new(data: data, logger: logger).call
   end
 
   describe "valid import" do
@@ -15,6 +14,10 @@ RSpec.describe JsonImportService do
       result = import(data)
 
       expect(result).to be_success
+    end
+
+    it "creates restaurants" do
+      expect { import(data) }.to change(Restaurant, :count).by(1)
     end
 
     it "creates menus" do
@@ -32,6 +35,7 @@ RSpec.describe JsonImportService do
     it "returns correct summary" do
       result = import(data)
 
+      expect(result.data[:restaurants_created]).to eq(1)
       expect(result.data[:total]).to eq(4)
       expect(result.data[:created]).to eq(3)
       expect(result.data[:existing]).to eq(1) # Burger on Dinner

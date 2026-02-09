@@ -1,17 +1,22 @@
 {
-  "menus": [
+  "restaurants": [
     {
-      "name": "Lunch",
-      "menu_items": [
-        { "name": "Burger", "description": "Juicy beef burger", "price": 12.50 },
-        { "name": "Salad", "description": "Fresh garden salad", "price": 8.00 }
-      ]
-    },
-    {
-      "name": "Dinner",
-      "menu_items": [
-        { "name": "Steak", "description": "Grilled ribeye", "price": 25.00 },
-        { "name": "Burger", "description": "Juicy beef burger", "price": 12.50 }
+      "name": "Test Restaurant",
+      "menus": [
+        {
+          "name": "Lunch",
+          "menu_items": [
+            { "name": "Burger", "description": "Juicy beef burger", "price": 12.50 },
+            { "name": "Salad", "description": "Fresh garden salad", "price": 8.00 }
+          ]
+        },
+        {
+          "name": "Dinner",
+          "menu_items": [
+            { "name": "Steak", "description": "Grilled ribeye", "price": 25.00 },
+            { "name": "Burger", "description": "Juicy beef burger", "price": 12.50 }
+          ]
+        }
       ]
     }
   ]

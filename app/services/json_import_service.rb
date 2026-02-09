@@ -1,45 +1,71 @@
 class JsonImportService
-  def initialize(restaurant:, data:, logger: Rails.logger)
-    @restaurant = restaurant
+  def initialize(data:, logger: Rails.logger)
     @data = data
     @logger = logger
   end
 
   def call
-    return Result.failure("Invalid data: expected a Hash with 'menus' key") unless valid_structure?
+    return Result.failure("Invalid data: expected a Hash with 'restaurants' key") unless valid_structure?
 
     item_results = []
+    restaurants_created = 0
 
-    @data["menus"].each do |menu_data|
-      menu = find_or_create_menu(menu_data)
+    @data["restaurants"].each do |restaurant_data|
+      name = restaurant_data["name"]
+      unless name.present?
+        @logger.warn("Skipping restaurant with missing name")
+        next
+      end
 
-      next unless menu
+      restaurant = Restaurant.find_or_initialize_by(name: name)
+      if restaurant.new_record?
+        restaurant.save!
+        restaurants_created += 1
+        @logger.info("Created restaurant: #{name}")
+      else
+        @logger.info("Existing restaurant: #{name}")
+      end
 
-      (menu_data["menu_items"] || []).each do |item_data|
-        result = import_item(menu, item_data)
-        item_results << result
-        log_item_result(result)
+      (restaurant_data["menus"] || []).each do |menu_data|
+        menu = find_or_create_menu(restaurant, menu_data)
+        next unless menu
+
+        items = menu_data["menu_items"] || menu_data["dishes"] || []
+        seen_names = Set.new
+
+        items.each do |item_data|
+          item_name = item_data["name"]
+          if item_name.present? && seen_names.include?(item_name)
+            @logger.info("Skipping duplicate item in batch: #{item_name}")
+            next
+          end
+          seen_names.add(item_name)
+
+          result = import_item(menu, item_data)
+          item_results << result
+          log_item_result(result)
+        end
       end
     end
 
-    summary = build_summary(item_results)
+    summary = build_summary(item_results).merge(restaurants_created: restaurants_created)
     Result.success(summary)
   end
 
   private
 
   def valid_structure?
-    @data.is_a?(Hash) && @data["menus"].is_a?(Array)
+    @data.is_a?(Hash) && @data["restaurants"].is_a?(Array)
   end
 
-  def find_or_create_menu(menu_data)
+  def find_or_create_menu(restaurant, menu_data)
     name = menu_data["name"]
     unless name.present?
       @logger.warn("Skipping menu with missing name")
       return nil
     end
 
-    @restaurant.menus.find_or_create_by!(name: name)
+    restaurant.menus.find_or_create_by!(name: name)
   end
 
   def import_item(menu, item_data)
@@ -54,7 +80,7 @@ class JsonImportService
     else
       menu_item = MenuItem.create!(
         name: name,
-        description: item_data["description"] || "",
+        description: item_data["description"].presence || "No description",
         price: item_data["price"] || 0
       )
       menu.menu_items << menu_item
