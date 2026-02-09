@@ -1,14 +1,20 @@
 class ImportsController < ApplicationController
   def create
-    restaurant = Restaurant.find(params[:restaurant_id])
-    data = params.permit!.to_h.except("controller", "action", "restaurant_id")
+    data = params.permit!.to_h.except("controller", "action")
 
-    result = JsonImportService.new(restaurant: restaurant, data: data).call
+    import = Import.create!(input_data: data)
+    ImportJob.perform_later(import.id)
 
-    if result.success?
-      render json: { data: result.data }, status: :ok
-    else
-      render json: { error: { message: result.error } }, status: :unprocessable_entity
-    end
+    render json: { data: { id: import.id, status: import.status } }, status: :accepted
+  end
+
+  def show
+    import = Import.find(params[:id])
+
+    body = { id: import.id, status: import.status, created_at: import.created_at }
+    body[:result] = import.result_data if import.completed?
+    body[:error_message] = import.error_message if import.failed?
+
+    render json: { data: body }
   end
 end

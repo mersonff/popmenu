@@ -1,0 +1,35 @@
+{
+  "restaurants": [
+    {
+      "name": "Poppo's Cafe",
+      "menus": [
+        {
+          "name": "lunch",
+          "menu_items": [
+            { "name": "Burger", "price": 9.00 },
+            { "name": "Fries", "price": 4.50 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Casa del Poppo",
+      "menus": [
+        {
+          "name": "lunch",
+          "dishes": [
+            { "name": "Chicken Wings", "price": 9.00 },
+            { "name": "Chicken Wings", "price": 9.00 }
+          ]
+        },
+        {
+          "name": "dinner",
+          "menu_items": [
+            { "name": "Steak", "price": 25.00 },
+            { "name": "Burger", "price": 12.50 }
+          ]
+        }
+      ]
+    }
+  ]
+}

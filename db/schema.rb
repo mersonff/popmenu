@@ -11,6 +11,15 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[8.0].define(version: 2026_02_08_221145) do
+  create_table "imports", force: :cascade do |t|
+    t.string "status", default: "pending", null: false
+    t.json "input_data", null: false
+    t.json "result_data"
+    t.string "error_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "menu_item_placements", force: :cascade do |t|
     t.integer "menu_id", null: false
     t.integer "menu_item_id", null: false
