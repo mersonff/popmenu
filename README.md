@@ -14,20 +14,12 @@ Rails 8 API for managing restaurants, menus, and menu items with bulk JSON impor
 ### With Docker Compose
 
 ```bash
-# Build and start the API + job worker
-docker compose up --build
-
-# The API is available at http://localhost:3000
+docker compose -f docker-compose.dev.yml up --build
 ```
+
+That's it. The API runs at http://localhost:3000.
 
 The `web` service runs the Rails server and the `jobs` service runs the Solid Queue worker. Both share a persistent `storage` volume for SQLite databases.
-
-You need to set `RAILS_MASTER_KEY` in your environment (or a `.env` file):
-
-```bash
-echo "RAILS_MASTER_KEY=$(cat config/master.key)" > .env
-docker compose up --build
-```
 
 ### Local Development
 

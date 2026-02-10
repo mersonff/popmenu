@@ -1,0 +1,28 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - storage:/rails/storage
+    environment:
+      - RAILS_ENV=development
+    command: bash -c "./bin/rails db:prepare && ./bin/rails server -b 0.0.0.0"
+
+  jobs:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - storage:/rails/storage
+    environment:
+      - RAILS_ENV=development
+    depends_on:
+      web:
+        condition: service_started
+    command: bash -c "sleep 5 && ./bin/jobs"
+
+volumes:
+  storage:
